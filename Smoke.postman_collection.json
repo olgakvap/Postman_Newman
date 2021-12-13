@@ -1,0 +1,919 @@
+{
+	"info": {
+		"_postman_id": "81c973c5-aec7-47bb-86fb-9eddf853782e",
+		"name": "Smoke_test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const {data:{login:{accessToken, user}}} = pm.response.json();\r",
+									"//console.log(user)\r",
+									"pm.environment.set(\"accessToken\",accessToken);\r",
+									"pm.environment.set(\"userID\", user._id);\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									" pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"pm.test(\"Response time is less than 1500ms\", function () {\r",
+									" pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+									"});\r",
+									"pm.test(\"response structure has required field\",function(){\r",
+									"  pm.expect(accessToken).is.not.empty;\r",
+									"  pm.expect(user).haveOwnProperty(\"email\");\r",
+									"  pm.expect(user).not.haveOwnProperty(\"password\");\r",
+									"  pm.expect(user.email).to.equal(pm.environment.get(\"testUserEmail\").toLowerCase());\r",
+									"});\r",
+									"\r",
+									"//OR\r",
+									"// const respBody = pm.response.json();\r",
+									"//pm.environment.set(\"token\", respBody.data.login.accessToken);\r",
+									"//pm.environment.set(\"userID\", respBody.data.login.user._id);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query login ($email: String!, $password: String!) {\n    login (email: $email, password: $password) {\n        accessToken\n        user {\n            _id\n            email\n            firstName\n            lastName\n        \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n    }\n}",
+								"variables": "{\n  \"email\": \"{{testUserEmail}}\",\n    \"password\": \"{{testUserPassword}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "userUpdate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const values = JSON.parse(pm.request.body.graphql.variables).values;\r",
+									"pm.environment.set(\"firstName\",values.firstName);\r",
+									"pm.environment.set(\"lastName\",values.lastName);\r",
+									"pm.environment.set(\"jobTitle\",values.jobTitle);\r",
+									"pm.environment.set(\"languages\",values.languages);\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"    pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 1500ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+									"});\r",
+									"//bug:https://trello.com/c/0wcYgkbj/293-profile-userupdate-doesnt-work\r",
+									"pm.test(\"Response doesn`t contain errors\",function(){\r",
+									"    pm.expect(pm.response.text()).to.not.include(\"errors\");\r",
+									"});\r",
+									"//bug:https://trello.com/c/0wcYgkbj/293-profile-userupdate-doesnt-work\r",
+									"\r",
+									"pm.test(\"Response structure has required field\",function(){\r",
+									"    pm.expect(pm.response.json().data).to.haveOwnProperty(\"userUpdate\").that.eqls(\"User Updated\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation userUpdate ($userId: ID!, $values: UserInput) {\n    userUpdate (userId: $userId, values: $values)\n}\n",
+								"variables": "{\n  \"userId\": \"{{userID}}\",\n  \"values\": {\n    \"firstName\": \"{{$randomFirstName}}\",\n    \"lastName\": \"{{$randomLastName}}\",\n    \"jobTitle\": \"QA Engineer\",\n    \"languages\":[ \"JavaScript\", \"Python\"]\n  }\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query users {\n    users {\n        _id\n        email\n        firstName\n        lastName\n        \n        about\n        image\n        jobTitle\n        level\n        languages\n        roles\n        links\n        starredProblems\n        starredPublications\n        lastAccess\n        createdAt\n        updatedAt\n        isActivated\n        activationLinkId\n    }\n}",
+								"variables": "{}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user-verify",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"verify that user data has been updated successfully\",function(){\r",
+									"const body = pm.response.json();\r",
+									"    pm.expect(body.data.user.firstName).is.equal(pm.environment.get(\"firstName\"));\r",
+									"    pm.expect(body.data.user.lastName).is.equal(pm.environment.get(\"lastName\"));\r",
+									"    pm.expect(body.data.user.jobTitle).is.equal(pm.environment.get(\"jobTitle\"));\r",
+									"    pm.expect(body.data.user.languages).is.eql(pm.environment.get(\"languages\"));\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query user ($userId: ID!) {\n    user (userId: $userId) {\n        _id\n        email\n        firstName\n        lastName\n        about\n        image\n        jobTitle\n        level\n        languages\n        roles\n        links\n        starredProblems\n        starredPublications\n        lastAccess\n        createdAt\n        updatedAt\n        isActivated\n        activationLinkId\n    }\n}\n",
+								"variables": "{\n  \"userId\": \"{{userID}}\"\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Correct\", function () {\r",
+									"    pm.response.to.have.body({\"data\":{\"logout\":true}});\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query logout {\n    logout\n}",
+								"variables": "{}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company",
+			"item": [
+				{
+					"name": "login Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const {data:{login:{accessToken, user}}} = pm.response.json();\r",
+									"//console.log(user)\r",
+									"pm.environment.set(\"accessToken\",accessToken);\r",
+									"pm.environment.set(\"userID\", user._id);\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									" pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"pm.test(\"Response time is less than 1500ms\", function () {\r",
+									" pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+									"});\r",
+									"pm.test(\"response structure has required field\",function(){\r",
+									"  pm.expect(accessToken).is.not.empty;\r",
+									"  pm.expect(user).haveOwnProperty(\"email\");\r",
+									"  pm.expect(user).not.haveOwnProperty(\"password\");\r",
+									"  pm.expect(user.email).to.equal(pm.environment.get(\"testUserEmail\"));\r",
+									"});\r",
+									"\r",
+									"//OR\r",
+									"// const respBody = pm.response.json();\r",
+									"//pm.environment.set(\"token\", respBody.data.login.accessToken);\r",
+									"//pm.environment.set(\"userID\", respBody.data.login.user._id);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query login ($email: String!, $password: String!) {\n    login (email: $email, password: $password) {\n        accessToken\n        user {\n            _id\n            email\n            firstName\n            lastName\n        \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n    }\n}",
+								"variables": "{\n  \"email\": \"{{testUserEmail}}\",\n    \"password\": \"{{testUserPassword}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "companyCreate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const respBody = pm.response.json();\r",
+									"pm.environment.set(\"companyID\", respBody.data.companyCreate);\r",
+									"\r",
+									"const reqBody = JSON.parse(pm.request.body.graphql.variables);\r",
+									"pm.environment.set(\"companyTitle\", reqBody.data.title);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation companyCreate ($data: CompanyInput) {\n    companyCreate (data: $data)\n}",
+								"variables": "{\n  \"data\": {\n    \"title\": \"{{$randomLoremWords}}\",\n    \"description\": \"\",\n    \"image\": \"\",\n    \"link\": \"\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "companyDelete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// //bug:https://trello.com/c/0wcYgkbj/293-profile-userupdate-doesnt-work\r",
+									"// pm.test(\"Response doesn`t contain errors\",function(){\r",
+									"//     pm.expect(pm.response.text()).to.not.include(\"errors\");\r",
+									"// });\r",
+									"\r",
+									"pm.test(\"Response should contain error permission denied\",function(){\r",
+									"    pm.expect(pm.response.json().errors[0]).to.haveOwnProperty(\"message\").that.equal(\"Error: Permission Denied\");\r",
+									"});\r",
+									"\r",
+									"// // https://trello.com/c/PT9bxQA0/292-publication-update-error-permission-denied\r",
+									"// pm.test(\"Correct\", function () {\r",
+									"//     pm.response.to.have.body({\"data\":{\"companyDelete\":\"Company deleted\"}});\r",
+									"// });\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation companyDelete ($companyId: ID!) {\n    companyDelete (companyId: $companyId)\n}",
+								"variables": "{\n  \"companyId\": \"{{companyID}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "publication",
+			"item": [
+				{
+					"name": "login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const {data:{login:{accessToken, user}}} = pm.response.json();\r",
+									"//console.log(user)\r",
+									"pm.environment.set(\"accessToken\",accessToken);\r",
+									"pm.environment.set(\"userID\", user._id);\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									" pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"pm.test(\"Response time is less than 1500ms\", function () {\r",
+									" pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+									"});\r",
+									"pm.test(\"response structure has required field\",function(){\r",
+									"  pm.expect(accessToken).is.not.empty;\r",
+									"  pm.expect(user).haveOwnProperty(\"email\");\r",
+									"  pm.expect(user).not.haveOwnProperty(\"password\");\r",
+									"  pm.expect(user.email).to.equal(pm.environment.get(\"testUserEmail\"));\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query login ($email: String!, $password: String!) {\n    login (email: $email, password: $password) {\n        accessToken\n        user {\n            _id\n            email\n            firstName\n            lastName\n        \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n    }\n}",
+								"variables": "{\n  \"email\": \"{{testUserEmail}}\",\n    \"password\": \"{{testUserPassword}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publicationCreate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"    pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response structure has required field\",function(){\r",
+									"    pm.expect(pm.response.json().data).to.haveOwnProperty(\"publicationCreate\").that.eqls(\"Publication created\");\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const publicationTitle = \"test\" + Date.now();\r",
+									"console.log(Date.now());\r",
+									"pm.environment.set(\"publicationTitle\", publicationTitle);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation PublicationCreate($values: PublicationInput) {\n  publicationCreate(values: $values)\n}\n",
+								"variables": "{\n  \"values\": {\n    \"title\": \"{{publicationTitle}}\",\n    \"image\": \"test\",\n    \"description\": \"test\",\n    \"content\": \"test\"\n  }\n}\n\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publications - verify publication created",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const { data: gqlData } = pm.response.json();\r",
+									"console.log(gqlData)\r",
+									"const publicationTitle = pm.environment.get(\"publicationTitle\");\r",
+									"\r",
+									"pm.test(\"Verify publication list contain new publication\", function () {\r",
+									"  const publication = gqlData.publications.find(el => el.title === publicationTitle);\r",
+									"  //console.log(publication.title);\r",
+									"  pm.expect(Object.keys(publication).length).not.to.equal(0);\r",
+									"  pm.environment.set(\"publicationID\", publication._id);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query publications ($offset: Int, $limit: Int) {\n    publications (offset: $offset, limit: $limit) {\n        _id\n        title\n        description\n        content\n        image\n        owner {\n            _id\n            email\n            firstName\n            lastName\n            \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        likes {\n            _id\n            email\n            firstName\n            lastName\n        \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        createdAt\n        updatedAt\n    }\n}",
+								"variables": "{\n  \"offset\": 0,\n  \"limit\": 0\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publicationUpdate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const values = JSON.parse(pm.request.body.graphql.variables).values;\r",
+									"pm.environment.set(\"publicationData\",values);\r",
+									"console.log(values);\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"    pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response time is less than 1500ms\", function () {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(1500);\r",
+									"});\r",
+									"//bug:https://trello.com/c/EbOFNG3z/91-infrastructure-permissions\r",
+									"pm.test(\"Response structure has required field\",function(){\r",
+									"    pm.expect(pm.response.json().data).to.haveOwnProperty(\"publicationUpdate\").that.eqls(\"Publication updated\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation publicationUpdate ($pubId: ID!, $values: PublicationInput) {\n    publicationUpdate (pubId: $pubId, values: $values)\n}",
+								"variables": "{\n  \"pubId\": \"{{publicationID}}\",\n  \"values\": {\n    \"title\": \"test2\",\n    \"image\": \"test\",\n    \"description\": \"test\",\n    \"content\": \"test\"\n  }\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publication - verify publication updated",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"//case 1 (вариант 1)\r",
+									"// pm.test(\"Verify publication data has updated successfully\",function() {\r",
+									"// const publication = pm.response.json().data.publication;\r",
+									"//     pm.expect(publication.title).is.equal(pm.environment.get(\"publicationData\").title);\r",
+									"//     pm.expect(publication.description).is.equal(pm.environment.get(\"publicationData\").description);\r",
+									"//         pm.expect(publication.content).is.equal(pm.environment.get(\"publicationData\").content);\r",
+									"// });\r",
+									"\r",
+									"//case 2\r",
+									"pm.test(\"Verify publication data has updated successfully\",function() {\r",
+									"const publication = pm.response.json().data.publication;\r",
+									"    //pm.expect(publication).to.include({x: {a: 1}});\r",
+									"    pm.expect(publication).to.include(pm.environment.get(\"publicationData\"));\r",
+									"});\r",
+									"\r",
+									"const likesCount = pm.response.json().data.publication.likes.length;\r",
+									"pm.environment.set(\"likesCount\", likesCount);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query publication ($pubId: ID!) {\n    publication (pubId: $pubId) {\n        _id\n        title\n        description\n        content\n        image\n        owner {\n            _id\n            email\n            firstName\n            lastName\n           \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        likes {\n            _id\n            email\n            firstName\n            lastName\n            \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        createdAt\n        updatedAt\n    }\n}",
+								"variables": "{\n  \"pubId\": \"{{publicationID}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publicationLike",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response is a well-formed JSON object\",function(){\r",
+									"    pm.response.to.have.jsonBody;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Response structure has required field\",function(){\r",
+									"    pm.expect(pm.response.json().data).to.haveOwnProperty(\"publicationLike\").that.eqls(\"Publication liked\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation publicationLike ($pubId: ID!) {\n    publicationLike (pubId: $pubId)\n}",
+								"variables": "{\n  \"pubId\": \"{{publicationID}}\"\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publication verify like count",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Verify publication data has updated successfully\",function() {\r",
+									"    const publication = pm.response.json().data.publication;\r",
+									"    pm.expect(publication.likes.length).is.equal(pm.environment.get(\"likesCount\") + 1);\r",
+									"    \r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query publication ($pubId: ID!) {\n    publication (pubId: $pubId) {\n        _id\n        title\n        description\n        content\n        image\n        owner {\n            _id\n            email\n            firstName\n            lastName\n           \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        likes {\n            _id\n            email\n            firstName\n            lastName\n            \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        createdAt\n        updatedAt\n    }\n}",
+								"variables": "{\n  \"pubId\": \"{{publicationID}}\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publicationDelete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test.skip(\"Response structure has required field\",function(){\r",
+									"    pm.expect(pm.response.json().data).to.haveOwnProperty(\"publicationDelete\").that.eqls(\"Publication deleted\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation publicationDelete ($pubId: ID!) {\n    publicationDelete (pubId: $pubId)\n}",
+								"variables": "{\n  \"pubId\": \"{{publicationID}}\"\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "publications check if deleted",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const { data: gqlData } = pm.response.json();\r",
+									"console.log(gqlData)\r",
+									"const publicationID = pm.environment.get(\"publicationID\");\r",
+									"\r",
+									"pm.test.skip(\"Verify publication list does not contain deleted publication\", function () {\r",
+									"  const publication = gqlData.publications.find(el => el._id === publicationID);\r",
+									"  console.log(publication);\r",
+									"  pm.expect(publication).to.be.undefined;\r",
+									"  \r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query publications ($offset: Int, $limit: Int) {\n    publications (offset: $offset, limit: $limit) {\n        _id\n        title\n        description\n        content\n        image\n        owner {\n            _id\n            email\n            firstName\n            lastName\n            \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        likes {\n            _id\n            email\n            firstName\n            lastName\n        \n            about\n            image\n            jobTitle\n            level\n            languages\n            roles\n            links\n            starredProblems\n            starredPublications\n            lastAccess\n            createdAt\n            updatedAt\n            isActivated\n            activationLinkId\n        }\n        createdAt\n        updatedAt\n    }\n}",
+								"variables": "{\n  \"offset\": 0,\n  \"limit\": 0\n}"
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}",
+							"host": [
+								"{{baseUrl}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
